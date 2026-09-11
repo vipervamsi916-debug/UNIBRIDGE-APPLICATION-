@@ -1,0 +1,17 @@
+# 1. Initialize git repository
+git init
+
+# 2. Stage all organized files (ignoring node_modules and .env)
+git add .
+
+# 3. Create your initial commit
+git commit -m "feat: initial commit of UniBridge - Gemini Multimodal Emergency Reasoning System"
+
+# 4. Rename default branch to main
+git branch -M main
+
+# 5. Link your GitHub remote repository (replace with your repo URL)
+git remote add origin https://github.com/<YOUR_GITHUB_USERNAME>/unibridge.git
+
+# 6. Push to GitHub!
+git push -u origin main
