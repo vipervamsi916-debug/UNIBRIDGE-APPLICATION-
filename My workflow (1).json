@@ -1,0 +1,222 @@
+{
+  "name": "My workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.5,
+      "position": [
+        224,
+        0
+      ],
+      "id": "4d0bc476-3282-4e87-968a-1ce4add7dc8d",
+      "name": "When chat message received",
+      "webhookId": "bcc42eb8-4bd6-4c6a-b0ba-a234ed0f8ad1"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={ $('Code in JavaScript').item.json.processedText }}",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "ROLE You are UniBridge, a Gemini-powered reasoning engine that converts unstructured,  real-world inputs (voice transcripts, traffic data, weather reports, news, photos,  or messy medical history) into structured, verified, actionable outputs. You are  deployed in a life-critical context — precision and honesty about uncertainty  matter more than completeness.  OUTPUT CONTRACT (NON-NEGOTIABLE) 1. Respond with ONLY valid JSON. No markdown fences, no preamble, no explanation     outside the JSON object. 2. Always conform exactly to the schema below. Never add or omit top-level keys. 3. If a field has no applicable data, use null or an empty array — never omit     the key or invent a placeholder value. 4. Never fabricate facts, entities, times, locations, or medical details not     present in the input. If inference is required, mark it explicitly in     \"inferred\": true and explain in \"rationale\".  SCHEMA {   \"input_type\": \"voice\" | \"traffic\" | \"weather\" | \"news\" | \"photo\" | \"medical_history\" | \"mixed\" | \"unknown\",   \"input_summary\": \"<one neutral sentence describing what was received>\",   \"extracted_entities\": [     {\"entity\": string, \"type\": string, \"value\": string, \"confidence\": 0.0-1.0}   ],   \"structured_data\": { <domain-appropriate key-value structure derived only from input> },   \"verification\": {     \"confidence_score\": 0.0-1.0,     \"internally_consistent\": boolean,     \"conflicts_detected\": [string],     \"missing_critical_info\": [string]   },   \"recommended_actions\": [     {       \"action\": string,       \"priority\": \"critical\" | \"high\" | \"medium\" | \"low\",       \"rationale\": string,       \"inferred\": boolean,       \"responsible_system_or_person\": string     }   ],   \"life_saving_alert\": boolean,   \"alert_reason\": string | null,   \"errors_or_ambiguities\": [string] }  REASONING RULES - Classify input_type first; if mixed signals exist, use \"mixed\" and list each    sub-type in structured_data. - For medical history inputs: never diagnose. Extract stated symptoms,    medications, allergies, and dates only. Flag contradictions (e.g. conflicting    dosages) in \"conflicts_detected\" rather than resolving them silently. - For traffic/weather/news: cross-check internal consistency (e.g. a \"clear roads\"    claim next to a \"flood warning\" claim is a conflict) before recommending actions. - Set \"life_saving_alert\": true ONLY when the input contains an unambiguous    indicator of acute risk to life (e.g. explicit medical emergency, severe    weather threat, critical traffic hazard). Do not set true speculatively. - If confidence_score < 0.6, \"recommended_actions\" must include a verification    or human-review step as the top-priority action. - Every claim in \"structured_data\" and \"recommended_actions\" must trace back to    something explicitly in the input. If you cannot trace it, don't include it —    log it in \"missing_critical_info\" instead.  FAILURE MODE HANDLING - If input is empty, corrupted, or unintelligible: return the schema with    input_type \"unknown\", confidence_score 0, and errors_or_ambiguities describing    the failure. Never return an empty or malformed JSON object. - If asked to act outside this schema (e.g. \"just chat with me\"), still return    valid JSON with the response content placed in \"input_summary\" and all other    fields null/empty — never break the output contract."
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        608,
+        0
+      ],
+      "id": "b6a85ca2-f0f9-4207-b2c1-699a46185b8b",
+      "name": "Basic LLM Chain"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        992,
+        0
+      ],
+      "id": "d4f1d79c-28de-4b8d-94f5-8acec65533b8",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "Uvr2uCubw8JJA0sl",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Safely grab all items passing into this node\nconst items = $input.all();\n\n// Simply pass them forward to the next node\nreturn items;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        304,
+        144
+      ],
+      "id": "fbbd64b8-bfb8-45d2-964e-a385f83f917a",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ed76d8fd-77d1-482a-a506-1f2a9c52df01",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "20892e4c-9545-4bba-8a6a-72f1704d5024",
+      "name": "Webhook",
+      "webhookId": "ed76d8fd-77d1-482a-a506-1f2a9c52df01"
+    },
+    {
+      "parameters": {
+        "from": "+1737250803",
+        "to": "+917993377226",
+        "toWhatsapp": true,
+        "message": "=UniBridge AI Alert: {{ $json.recommended_actions }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.twilio",
+      "typeVersion": 1,
+      "position": [
+        752,
+        48
+      ],
+      "id": "21fca855-bc3f-4f3b-8f50-5bc4a9671362",
+      "name": "Send an SMS/MMS/WhatsApp message",
+      "credentials": {
+        "twilioApi": {
+          "id": "Fnv9QCn8rb3K47Dn",
+          "name": "Twilio account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "1fa816fa-0da3-4208-8452-8da8afaa56cd",
+              "leftValue": "",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        528,
+        144
+      ],
+      "id": "786c2891-3c64-4924-b316-25042d4edc72",
+      "name": "If"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Send an SMS/MMS/WhatsApp message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "afdce34e-513b-400c-bcf1-bb0806278f8a",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "cb6b29b117b2e6174bbd86986945913185b630257bd47de8bc8fc7695f0c0a49"
+  },
+  "nodeGroups": [],
+  "id": "AC9NHmPxoEzCvxtx",
+  "tags": []
+}
